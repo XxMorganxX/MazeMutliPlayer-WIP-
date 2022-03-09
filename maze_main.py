@@ -1,4 +1,5 @@
-import a_star, pygame, random
+from collections import defaultdict
+import a_star, pygame, random, maze_solution
 
 
 """
@@ -34,6 +35,7 @@ BLUE = (51, 102, 255)
 
 #Constants
 FPS = 100
+box_dimension = 15
 
 #Getting Functions
 def indexOfBox(box):
@@ -49,7 +51,7 @@ def locationOfIndex(index):
 
 
 #Operating Functions
-def buildBoard(dim):
+def buildBoard(dim): 
     numArr = []
     rectArr = []
     for y in range(0, dim, box_dimension):
@@ -105,12 +107,14 @@ def changePoint(pos, numberArr, rectangleArr):
 
     return numberArr, rectangleArr
         
+def validate(numberArr, rectangleArr): #WIP - This is supposed to validate the maze
+    maze_solution.validate_board(numberArr, rectangleArr, dimension, box_dimension)
+
+    
 
 
-def main():
-    global box_dimension
 
-    box_dimension = 15 
+def main():    
     mouseDown = False
     num_board, rect_board, submit  = buildBoard(dimension)   
 
@@ -130,6 +134,7 @@ def main():
                 num_board, rect_board = changePoint(pos, num_board, rect_board)
             elif submit.collidepoint(pos):
                 print("Submit")
+                validate(num_board, rect_board) # W.I.P.
                 mouseDown = False
                 
 
