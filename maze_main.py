@@ -1,7 +1,5 @@
 from collections import defaultdict
-from matplotlib.pyplot import box
-from numpy import empty
-import pygame, random, maze_solution
+import pygame, random, maze_solution, time
 
 
 """
@@ -34,10 +32,11 @@ BLACK = (0, 0, 0)
 TEAL = (0,128,128)
 ORANGE = (255, 203, 62)
 BLUE = (51, 102, 255)
-GREEN = (62, 160, 85)
+DARKGREEN = (62, 160, 85)
+GREEN = (0, 124, 0)
 
 #Constants
-FPS = 2
+FPS = 1
 box_dimension = 15
 
 #Getting Functions
@@ -87,7 +86,8 @@ def draw_board(dim, button, numberArr, rectangleArr):
             pygame.draw.rect(WIN, ORANGE, box)
         elif numberArr[index] == 3:
             pygame.draw.rect(WIN, TEAL, box)
-    
+
+   
     #Drawing Button
     submit_text = MAIN_FONT.render("Submit", 1, BLACK)
     pygame.draw.rect(WIN, BLUE, button, border_radius=100)
@@ -106,8 +106,9 @@ def changePoint(pos, numberArr, rectangleArr):
     if pygame.Rect(x, y, box_dimension, box_dimension) not in rectangleArr:
         rectangleArr.append(pygame.Rect(x, y, box_dimension, box_dimension))
         numberArr[index] = 1
-    
+    boxPerLen = dimension // box_dimension
     print(indexAtLocation(rectangleArr[-1].topleft[0], rectangleArr[-1].topleft[1]))
+    print(index > boxPerLen, index < (box_dimension**2-boxPerLen),index % boxPerLen != 0, index % boxPerLen != (boxPerLen-1))
 
     return numberArr, rectangleArr
         
@@ -122,13 +123,16 @@ def validate_board(numberArr, rectanlgeArr):
     firstRun = True
     closed_set = []
     curr_set = []
+    temp = []
     
     turns = 0
 
-    while turns <= 4:
+    while turns <= 30:
         temp = []
         if (rectanlgeArr[1].topleft[0], rectanlgeArr[1].topleft[1]) in curr_set or (rectanlgeArr[1].topleft[0], rectanlgeArr[1].topleft[1]) in closed_set:
             solved = True
+            print("found")
+
         if firstRun:
             for i in [(1), (-1), (-boxPerLen), (boxPerLen)]:
                 if numberArr[start+i] == 0:
@@ -144,24 +148,39 @@ def validate_board(numberArr, rectanlgeArr):
             for location in curr_set:
                 index = indexAtLocation(location[0], location[1])
                 for delta in [(index+1),(index-1),(index+boxPerLen),(index-boxPerLen)]:
-                    if delta > boxPerLen and delta < (boxPerLen* dimension)-boxPerLen and delta % boxPerLen != 0 and delta % boxPerLen != 52:
-                        if ((locationOfIndex(delta)[0], locationOfIndex(delta)[1]) not in closed_set) and numberArr[delta] == 0:
-                            temp.append(locationOfIndex(delta))
-                            pygame.draw.rect(WIN, GREEN, (locationOfIndex(delta)[0], locationOfIndex(delta)[1], boxDrawnSize[0], boxDrawnSize[1]))
-            
+                    if not (index % (boxPerLen-1 ) == 0 and delta % boxPerLen == 0):
+                        if ((locationOfIndex(delta)[0], locationOfIndex(delta)[1]) not in closed_set) and ((locationOfIndex(delta)[0], locationOfIndex(delta)[1]) not in temp) and numberArr[delta] == 0:
+                            if delta > boxPerLen or delta < (box_dimension**2-boxPerLen) or delta % boxPerLen != 0 or delta % boxPerLen != (boxPerLen-1):
+                                temp.append(locationOfIndex(delta))
+                    elif not (index % (boxPerLen) == 0 and delta % boxPerLen-1 == 0):
+                        if ((locationOfIndex(delta)[0], locationOfIndex(delta)[1]) not in closed_set) and ((locationOfIndex(delta)[0], locationOfIndex(delta)[1]) not in temp) and numberArr[delta] == 0:
+                            if delta > boxPerLen or delta < (box_dimension**2-boxPerLen) or delta % boxPerLen != 0 or delta % boxPerLen != (boxPerLen-1):
+                                temp.append(locationOfIndex(delta))
+                    #else:
+                        #continue
 
+        for location in closed_set:
+            pygame.draw.rect(WIN, DARKGREEN, (location[0], location[1], boxDrawnSize[0], boxDrawnSize[1]))
+            print("DRAW 1")
+        for location in temp:
+            pygame.draw.rect(WIN, GREEN, (location[0], location[1], boxDrawnSize[0], boxDrawnSize[1]))
+            print("DRAW 2")
 
         for location in temp:
             closed_set.append(location) 
         curr_set = temp
+        """for location in closed_set:
+            curr_set.remove(location)"""
+        #temp.clear()
         
 
         
         firstRun = False
-        #solved = True
+        
         
         turns += 1
-
+    
+    print(len(temp))
     print("\n Done \n")
     
 
@@ -188,6 +207,7 @@ def main():
             if submit.collidepoint(pos):
                 print("Submit")
                 validate_board(num_board, rect_board) # W.I.P.
+
                 mouseDown = False
                 
 
