@@ -1,3 +1,4 @@
+import math
 import pygame, random
 
 
@@ -34,9 +35,10 @@ ORANGE = (255, 203, 62)
 BLUE = (51, 102, 255)
 DARKGREEN = (62, 160, 85)
 GREEN = (0, 124, 0)
+PURPLE = (128,0,128)
 
 #Constants
-FPS = 1
+FPS = 60
 box_dimension = 15
 
 #Getting Functions
@@ -91,22 +93,61 @@ def buildBoard(dim):
         if rect4 not in rectArr:
             rectArr.append(rect4)
 
-    button = pygame.Rect(((dimension*0.015), dimension + (margin*0.1), (dimension*0.15), (margin*0.8)))
+    submit_button = pygame.Rect(((dimension*0.015), dimension + (margin*0.1), (dimension*0.15), (margin*0.8)))
+    solve_button = pygame.Rect(((dimension*0.175), dimension + (margin*0.1), (dimension*0.15), (margin*0.8)))
 
-    return numArr, rectArr, button
+    return numArr, rectArr, submit_button, solve_button
 
 def valid_solution(rectangleArr, numberArr):
     index = indexAtLocation(rectangleArr[0].topleft[0], rectangleArr[0].topleft[1])
+    end = (rectangleArr[1].topleft[0], rectangleArr[1].topleft[1])
     boxPerLen = dimension // box_dimension
 
+    path = []
+    temp = []
+
+    #path.append(locationOfIndex(delta))
+
     stillRunning = True
-    #while stillRunning:
-        #for delta in [(index+1),(index-1),(index+boxPerLen),(index-boxPerLen)]:
-            #if 
+    counter = 0
+    while stillRunning and (counter < 1000):
+        if end in path:
+            print("SOLUTION VALID")
+            stillRunning = False
+            break
 
-    return rectangleArr, numberArr
+        for delta in [(index+1),(index-1),(index+boxPerLen),(index-boxPerLen)]:
+            if numberArr[delta] == 4 or numberArr[delta] == 3:
+                if locationOfIndex(delta) not in path:
+                    path.append(locationOfIndex(delta))
+        
+        """
+        dist = 10000
+        min_location = None
+        for location in temp:
+            temp_dist = math.hypot(location[0]-end[0], location[1]-end[1]) 
+            if temp_dist < dist:
+                dist = temp_dist
+                min_location = location
+        print(f"next box {min_location}")
+        """
 
-def draw_board(dim, button, numberArr, rectangleArr):
+        #if min_location != None:
+        #    index = indexAtLocation(min_location[0], min_location[1])
+        #    path.append(min_location)
+
+        counter += 1
+        print(counter)
+
+
+def draw_buttons(buttonDict):
+    for rect, string in buttonDict.items():
+        text = MAIN_FONT.render(string[1], 1, BLACK)
+        pygame.draw.rect(WIN, BLUE, (rect[0], rect[1]), border_radius=100)
+        WIN.blit(text, (string[0]))
+
+def draw_board(dim, submit_button, solve_button,  numberArr, rectangleArr):
+    
     #Draw Rects
     for box in rectangleArr:
         index = indexOfBox(box)
@@ -118,12 +159,15 @@ def draw_board(dim, button, numberArr, rectangleArr):
             pygame.draw.rect(WIN, ORANGE, box)
         elif numberArr[index] == 3:
             pygame.draw.rect(WIN, TEAL, box)
+        elif numberArr[index] == 4:
+            pygame.draw.rect(WIN, PURPLE, box)
 
-   
+    buttons = {
+        (submit_button.topleft,  submit_button.size) : ((int(dimension*0.04), int(dimension-(dimension*0.0025))), "Submit"),
+        (solve_button.topleft,  solve_button.size) : ((int(dimension*0.2125), int(dimension-(dimension*0.0025))), "Solve")
+    }
     #Drawing Button
-    submit_text = MAIN_FONT.render("Submit", 1, BLACK)
-    pygame.draw.rect(WIN, BLUE, button, border_radius=100)
-    WIN.blit(submit_text, (int(dimension*0.04), int(dimension-(dimension*0.0025))))
+    draw_buttons(buttons)
     
     #Draws the lines
     for x in range(0, dim+box_dimension, box_dimension):
@@ -137,13 +181,14 @@ def changePoint(mouseNum, pos, numberArr, rectangleArr):
 
     boxPerLen = (dimension//box_dimension)
     
-    if mouseNum == 1:
+    if mouseNum == 1 or mouseNum == 4:
         if pygame.Rect(x, y, box_dimension, box_dimension) not in rectangleArr:
             rectangleArr.append(pygame.Rect(x, y, box_dimension, box_dimension))
-            numberArr[index] = 1
+            numberArr[index] = mouseNum
+        
 
     if mouseNum == 3:
-        if index > boxPerLen and index < (boxPerLen**2)-boxPerLen and index % boxPerLen != 0 and index % boxPerLen != boxPerLen-1 and numberArr[index] == 1:
+        if index > boxPerLen and index < (boxPerLen**2)-boxPerLen and index % boxPerLen != 0 and index % boxPerLen != boxPerLen-1 and (numberArr[index] == 1  or numberArr[index] == 4):
             numberArr[index] = 0
             rectangleArr.remove(pygame.Rect(x,y, box_dimension, box_dimension))
 
@@ -214,8 +259,9 @@ def validate_board(numberArr, rectangleArr):
 
 def main():    
     mouse_L_Down, mouse_R_Down = False, False
-    num_board, rect_board, submit  = buildBoard(dimension)   
+    num_board, rect_board, submit, solve  = buildBoard(dimension)   
 
+    Solve_Or_Draw = 1
 
     run = True
     while run:
@@ -226,17 +272,29 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN: 
                 if event.button == 1: mouse_L_Down = True
                 elif event.button == 3: mouse_R_Down = True
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE: 
+                    print("Checking...")
+                    valid_solution(rect_board, num_board) 
             elif event.type == pygame.MOUSEBUTTONUP: mouse_L_Down, mouse_R_Down = False, False
             elif event.type == pygame.QUIT: run = False
 
         if mouse_L_Down: # If left clicked       
             pos = pygame.mouse.get_pos()
             if pos[1] < dimension:
-                num_board, rect_board = changePoint(1, pos, num_board, rect_board)
+                num_board, rect_board = changePoint(Solve_Or_Draw, pos, num_board, rect_board)
             if submit.collidepoint(pos):
                 print("Submit")
                 mouse_L_Down = False
                 validate_board(num_board, rect_board)
+            if solve.collidepoint(pos):
+                print("Solve")
+                if Solve_Or_Draw == 1:
+                    Solve_Or_Draw = 4
+                elif Solve_Or_Draw == 4:
+                    Solve_Or_Draw = 1
+                mouse_L_Down = False
+
 
         elif mouse_R_Down: # If right clicked
             pos = pygame.mouse.get_pos()
@@ -248,7 +306,7 @@ def main():
 
         
         
-        draw_board(dimension, submit, num_board, rect_board) # Update Visuals
+        draw_board(dimension, submit, solve, num_board, rect_board) # Update Visuals
 
         pygame.display.update()
 
