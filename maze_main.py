@@ -1,7 +1,4 @@
-from collections import defaultdict
-from cv2 import solve
-from matplotlib.pyplot import box
-import pygame, random, maze_solution, time
+import pygame, random
 
 
 """
@@ -10,6 +7,7 @@ NUMBER ARR KEY:
 1 = Boarder
 2 = Start
 3 = Stop
+4 = Solution
 """
 
 #Pygame General Setup
@@ -38,7 +36,7 @@ DARKGREEN = (62, 160, 85)
 GREEN = (0, 124, 0)
 
 #Constants
-FPS = 60
+FPS = 1
 box_dimension = 15
 
 #Getting Functions
@@ -79,15 +77,34 @@ def buildBoard(dim):
         numArr[(boxPerLen*i)-1] = 1
         numArr[(boxPerLen**2-1) - i] = 1
         
-        rectArr.append(pygame.Rect(locationOfIndex(i), (box_dimension, box_dimension)))
-        rectArr.append(pygame.Rect(locationOfIndex(boxPerLen**2-1 - i), (box_dimension, box_dimension)))
-        rectArr.append(pygame.Rect(locationOfIndex((boxPerLen*i)-1), (box_dimension, box_dimension)))
-        rectArr.append(pygame.Rect(locationOfIndex(boxPerLen*i), (box_dimension, box_dimension)))
+        rect1 = pygame.Rect(locationOfIndex(i), (box_dimension, box_dimension))
+        rect2 = pygame.Rect(locationOfIndex(boxPerLen**2-1 - i), (box_dimension, box_dimension))
+        rect3 = pygame.Rect(locationOfIndex(boxPerLen*i-1), (box_dimension, box_dimension))
+        rect4 = pygame.Rect(locationOfIndex(boxPerLen*i), (box_dimension, box_dimension))
+
+        if rect1 not in rectArr:
+            rectArr.append(rect1)
+        if rect2 not in rectArr:
+            rectArr.append(rect2)
+        if rect3 not in rectArr:
+            rectArr.append(rect3)
+        if rect4 not in rectArr:
+            rectArr.append(rect4)
 
     button = pygame.Rect(((dimension*0.015), dimension + (margin*0.1), (dimension*0.15), (margin*0.8)))
 
     return numArr, rectArr, button
-    
+
+def valid_solution(rectangleArr, numberArr):
+    index = indexAtLocation(rectangleArr[0].topleft[0], rectangleArr[0].topleft[1])
+    boxPerLen = dimension // box_dimension
+
+    stillRunning = True
+    #while stillRunning:
+        #for delta in [(index+1),(index-1),(index+boxPerLen),(index-boxPerLen)]:
+            #if 
+
+    return rectangleArr, numberArr
 
 def draw_board(dim, button, numberArr, rectangleArr):
     #Draw Rects
@@ -113,22 +130,29 @@ def draw_board(dim, button, numberArr, rectangleArr):
         pygame.draw.line(WIN, BLACK, (x, 0), (x, dim))
         pygame.draw.line(WIN, BLACK, (0, x), (dim, x))
 
-def changePoint(pos, numberArr, rectangleArr):
+def changePoint(mouseNum, pos, numberArr, rectangleArr):
     x = (pos[0] // box_dimension) * box_dimension
     y = (pos[1] // box_dimension) * box_dimension
     index = indexAtLocation(x, y)
+
+    boxPerLen = (dimension//box_dimension)
     
-    if pygame.Rect(x, y, box_dimension, box_dimension) not in rectangleArr:
-        rectangleArr.append(pygame.Rect(x, y, box_dimension, box_dimension))
-        numberArr[index] = 1
-    
-    #print(indexAtLocation(rectangleArr[-1].topleft[0], rectangleArr[-1].topleft[1]))
+    if mouseNum == 1:
+        if pygame.Rect(x, y, box_dimension, box_dimension) not in rectangleArr:
+            rectangleArr.append(pygame.Rect(x, y, box_dimension, box_dimension))
+            numberArr[index] = 1
+
+    if mouseNum == 3:
+        if index > boxPerLen and index < (boxPerLen**2)-boxPerLen and index % boxPerLen != 0 and index % boxPerLen != boxPerLen-1 and numberArr[index] == 1:
+            numberArr[index] = 0
+            rectangleArr.remove(pygame.Rect(x,y, box_dimension, box_dimension))
+
 
     return numberArr, rectangleArr
+
         
-def validate_board(numberArr, rectanlgeArr):
-    start = indexAtLocation(rectanlgeArr[0].topleft[0], rectanlgeArr[0].topleft[1])
-    end = indexAtLocation(rectanlgeArr[1].topleft[0], rectanlgeArr[1].topleft[1])
+def validate_board(numberArr, rectangleArr):
+    start = indexAtLocation(rectangleArr[0].topleft[0], rectangleArr[0].topleft[1])
 
     boxPerLen = dimension // box_dimension
     boxDrawnSize = (box_dimension, box_dimension)
@@ -143,7 +167,7 @@ def validate_board(numberArr, rectanlgeArr):
 
     while (not solved):
         
-        if (rectanlgeArr[1].topleft[0], rectanlgeArr[1].topleft[1]) in closed_set:
+        if (rectangleArr[1].topleft[0], rectangleArr[1].topleft[1]) in closed_set:
             solved = True
             print("found")
             break
@@ -189,7 +213,7 @@ def validate_board(numberArr, rectanlgeArr):
 
 
 def main():    
-    mouseDown = False
+    mouse_L_Down, mouse_R_Down = False, False
     num_board, rect_board, submit  = buildBoard(dimension)   
 
 
@@ -197,26 +221,34 @@ def main():
     while run:
         clock.tick(FPS)
         WIN.fill(WHITE)
+        
         for event in pygame.event.get():
-            if event.type == pygame.MOUSEBUTTONDOWN: mouseDown = True
-            elif event.type == pygame.MOUSEBUTTONUP: mouseDown = False
+            if event.type == pygame.MOUSEBUTTONDOWN: 
+                if event.button == 1: mouse_L_Down = True
+                elif event.button == 3: mouse_R_Down = True
+            elif event.type == pygame.MOUSEBUTTONUP: mouse_L_Down, mouse_R_Down = False, False
             elif event.type == pygame.QUIT: run = False
 
-        if mouseDown:      
+        if mouse_L_Down: # If left clicked       
             pos = pygame.mouse.get_pos()
             if pos[1] < dimension:
-                num_board, rect_board = changePoint(pos, num_board, rect_board)
+                num_board, rect_board = changePoint(1, pos, num_board, rect_board)
             if submit.collidepoint(pos):
                 print("Submit")
-                mouseDown = False
-                validate_board(num_board, rect_board) # W.I.P.
+                mouse_L_Down = False
+                validate_board(num_board, rect_board)
+
+        elif mouse_R_Down: # If right clicked
+            pos = pygame.mouse.get_pos()
+            if pos[1] < dimension:
+                num_board, rect_board = changePoint(3, pos, num_board, rect_board)
 
                 
                 
 
         
         
-        draw_board(dimension, submit, num_board, rect_board)
+        draw_board(dimension, submit, num_board, rect_board) # Update Visuals
 
         pygame.display.update()
 
