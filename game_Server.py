@@ -1,19 +1,20 @@
-import PodSixNet.Channel
-import PodSixNet.Server
-from time import sleep
-class ClientChannel(PodSixNet.Channel.Channel):
-    def Network(self, data):
-        print(data)
- 
-class BoxesServer(PodSixNet.Server.Server):
- 
-    channelClass = ClientChannel
- 
-    def Connected(self, channel, addr):
-        print ('new connection:'), channel
- 
-print( "STARTING SERVER ON LOCALHOST")
-boxesServe=BoxesServer()
+import socket, _thread, sys
+
+Server = ""
+Port = 5555
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+try:
+    s.bind((Server, Port))
+except socket.error as e:
+    print(e)
+
+s.listen(2) 
+print("waiting for server, Server Opened")
+
+def threaded_client(conn):
+    pass
+
 while True:
-    boxesServe.Pump()
-    sleep(0.01)
+    conn, addr = s.accept()
