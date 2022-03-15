@@ -1,11 +1,13 @@
 import PodSixNet.Channel
 import PodSixNet.Server
 from time import sleep
+
+
 class ClientChannel(PodSixNet.Channel.Channel):
     def Network(self, data):
         print(data)
  
-class BoxesServer(PodSixNet.Server.Server):
+class GameServer(PodSixNet.Server.Server):
  
     channelClass = ClientChannel
  
@@ -13,7 +15,7 @@ class BoxesServer(PodSixNet.Server.Server):
         print ('new connection:'), channel
  
 print( "STARTING SERVER ON LOCALHOST")
-boxesServe=BoxesServer()
+mazeServer=GameServer()
 while True:
-    boxesServe.Pump()
+    mazeServer.Pump()
     sleep(0.01)
