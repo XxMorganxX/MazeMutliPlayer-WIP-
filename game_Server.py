@@ -1,21 +1,20 @@
-import PodSixNet.Channel
-import PodSixNet.Server
-from time import sleep
+import socket, _thread, sys
 
+Server = ""
+Port = 5555
 
-class ClientChannel(PodSixNet.Channel.Channel):
-    def Network(self, data):
-        print(data)
- 
-class GameServer(PodSixNet.Server.Server):
- 
-    channelClass = ClientChannel
- 
-    def Connected(self, channel, addr):
-        print ('new connection:'), channel
- 
-print( "STARTING SERVER ON LOCALHOST")
-mazeServer=GameServer()
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+try:
+    s.bind((Server, Port))
+except socket.error as e:
+    print(e)
+
+s.listen(2) 
+print("waiting for server, Server Opened")
+
+def threaded_client(conn):
+    pass
+
 while True:
-    mazeServer.Pump()
-    sleep(0.01)
+    conn, addr = s.accept()

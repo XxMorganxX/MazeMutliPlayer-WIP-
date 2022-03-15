@@ -1,6 +1,4 @@
 import math, pygame, random
-from PodSixNet.Connection import ConnectionListener, connection
-from time import sleep
 
 
 """
@@ -11,7 +9,7 @@ NUMBER ARR KEY:
 3 = Stop
 4 = Solution
 """
-class mazeGame(ConnectionListener):
+class mazeGame():
     def __init__(self):
         #Pygame General Setup
         pygame.init
@@ -151,6 +149,7 @@ class mazeGame(ConnectionListener):
             self.WIN.blit(text, (string[0]))
 
     def draw_board(self, dim, submit_button, solve_button,  numberArr, rectangleArr):
+        self.WIN.fill(self.WHITE)
         
         #Draw Rects
         for box in rectangleArr:
@@ -267,7 +266,7 @@ class mazeGame(ConnectionListener):
         run = True
         while run:
             self.clock.tick(self.FPS)
-            self.WIN.fill(self.WHITE)
+            
             
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONDOWN: 
