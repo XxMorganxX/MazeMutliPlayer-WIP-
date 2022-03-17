@@ -1,4 +1,6 @@
-import math, pygame, random
+import pygame, random, pickle
+from game_Network import Network
+from game_Handler import gameHandle
 
 
 """
@@ -9,7 +11,9 @@ NUMBER ARR KEY:
 3 = Stop
 4 = Solution
 """
+
 class mazeGame():
+    #Initialize
     def __init__(self):
         #Pygame General Setup
         pygame.init
@@ -41,10 +45,7 @@ class mazeGame():
         self.FPS = 60
         self.BOX_DIMENSION = 15
 
-        #Server Connect
-        self.Connect()
-
-    #Conversion Functions
+    #Helping Conversion Functions
     def indexOfBox(self, box):
         return int(box.topleft[0] // self.BOX_DIMENSION) + ((box.topleft[1] // self.BOX_DIMENSION) * (self.dimension//self.BOX_DIMENSION))
 
@@ -57,12 +58,12 @@ class mazeGame():
         return row, col
 
     #Game Operation Functions
-    def buildBoard(self, dim): 
+    def buildBoard(self, ): 
         numArr = []
         rectArr = []
         boxPerLen = (self.dimension//self.BOX_DIMENSION)
-        for y in range(0, dim, self.BOX_DIMENSION):
-            for x in range(0, dim, self.BOX_DIMENSION):
+        for y in range(0, self.dimension, self.BOX_DIMENSION):
+            for x in range(0, self.dimension, self.BOX_DIMENSION):
                 numArr.append(0)
         
 
@@ -100,48 +101,6 @@ class mazeGame():
 
         return numArr, rectArr, submit_button, solve_button
 
-    def valid_solution(self, rectangleArr, numberArr):
-        start = self.indexAtLocation(rectangleArr[0].topleft[0], rectangleArr[0].topleft[1])
-        index = start
-        end = (rectangleArr[1].topleft[0], rectangleArr[1].topleft[1])
-        boxPerLen = self.dimension // self.BOX_DIMENSION
-
-        path = []
-        decisions = []
-
-        stillRunning = True
-        counter = 0
-        while stillRunning and (counter < 500):
-            if end in path:
-                print("SOLUTION VALID")
-                stillRunning = False
-                break
-
-            numOptions = 0
-            for delta in [(index+1),(index-1),(index+boxPerLen),(index-boxPerLen)]:
-                if numberArr[delta] == 4 or numberArr[delta] == 3:
-                    if self.locationOfIndex(delta) not in path and self.locationOfIndex(delta) not in decisions:
-                        numOptions += 1
-                        d = delta
-            
-            
-            if numOptions == 1:
-                path.append(self.locationOfIndex(d))
-                index = d
-            if numOptions == 0:
-                path = []
-                index = start
-            if numOptions >= 2:
-                path.append(self.locationOfIndex(d))
-                decisions.append(self.locationOfIndex(d))
-                index = self.indexAtLocation(decisions[-1][0], decisions[-1][1])
-                print(decisions)
-
-            
-
-            counter += 1
-            print(counter)
-
     def draw_buttons(self, buttonDict):
         for rect, string in buttonDict.items():
             text = self.MAIN_FONT.render(string[1], 1, self.BLACK)
@@ -150,7 +109,7 @@ class mazeGame():
 
     def draw_board(self, dim, submit_button, solve_button,  numberArr, rectangleArr):
         self.WIN.fill(self.WHITE)
-        
+          
         #Draw Rects
         for box in rectangleArr:
             index = self.indexOfBox(box)
@@ -197,77 +156,44 @@ class mazeGame():
 
 
         return numberArr, rectangleArr
-        
-    def validate_board(self, numberArr, rectangleArr):
-        start = self.indexAtLocation(rectangleArr[0].topleft[0], rectangleArr[0].topleft[1])
-
-        boxPerLen = self.dimension // self.BOX_DIMENSION
-        boxDrawnSize = (self.BOX_DIMENSION, self.BOX_DIMENSION)
-
-        solved = False
-        firstRun = True
-        closed_set = []
-        curr_set = []
-        temp = []
-        
-        turns = 0
-
-        while (not solved):
-            
-            if (rectangleArr[1].topleft[0], rectangleArr[1].topleft[1]) in closed_set:
-                solved = True
-                print("found")
-                break
-            if turns >= 1000:
-                print("No Solution")
-                break
-            temp = []
-            if firstRun:
-                for i in [(1), (-1), (-boxPerLen), (boxPerLen)]:
-                    if numberArr[start+i] == 0:
-                        currentLoc = self.locationOfIndex(start+i)
-                        curr_set.append((currentLoc[0], currentLoc[1]))
-                        pygame.draw.rect(self.WIN, self.BLACK, (currentLoc[0], currentLoc[1], boxDrawnSize[0], boxDrawnSize[1]))
-                        temp = curr_set
-                
-            elif not firstRun:
-                for location in curr_set:
-                    index = self.indexAtLocation(location[0], location[1])
-                    for delta in [(index+1),(index-1),(index+boxPerLen),(index-boxPerLen)]:
-                        if((self.locationOfIndex(delta)[0], self.locationOfIndex(delta)[1]) not in closed_set) and ((self.locationOfIndex(delta)[0], self.locationOfIndex(delta)[1]) not in temp) and ((self.locationOfIndex(delta)[0], self.locationOfIndex(delta)[1]) not in curr_set) and (numberArr[delta] == 0 or numberArr[delta] == 3):
-                                temp.append(self.locationOfIndex(delta))
-
-            
-            for location in temp:
-                pygame.draw.rect(self.WIN, self.GREEN, (location[0], location[1], boxDrawnSize[0], boxDrawnSize[1]))
 
 
+    def main(self):
+        net = Network() #
+        playerNum = int(net.getP())  #
+        print(f"You are Player {playerNum}")
 
-            for location in temp:
-                closed_set.append(location) 
-            curr_set = temp
+        #Display Var
+        _firstConn = True
 
-            
-            firstRun = False
-            turns += 1
-            
 
-        
-
-        print("\nDone \n")
-        
-
-    def main(self): 
         mouse_L_Down, mouse_R_Down = False, False
-        num_board, rect_board, submit, solve  = self.buildBoard(self.dimension)   
-
-        Solve_Or_Draw = 1
+        num_board, rect_board, submit, solve  = self.buildBoard()   
 
         run = True
         while run:
             self.clock.tick(self.FPS)
+            try:
+                game = net.send(pickle.dumps("get"))
+            except:
+                run = False
+                print("Couldn't get game")
+                break
             
-            
+            if game.connected() and _firstConn:
+                print("GAME CONNECTED!")
+                _firstConn = False
+
+            if game.bothSubmittedBoard():
+                print("Double Sub")
+                pygame.time.delay(200)
+                try:
+                    game = net.send(pickle.dumps("nextPhase"))
+                except:
+                    run = False
+                    print("Couldn't get game")
+                    break
+
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONDOWN: 
                     if event.button == 1: mouse_L_Down = True
@@ -277,24 +203,22 @@ class mazeGame():
                         print("Checking...")
                         self.valid_solution(rect_board, num_board) 
                 elif event.type == pygame.MOUSEBUTTONUP: mouse_L_Down, mouse_R_Down = False, False
-                elif event.type == pygame.QUIT: run = False
+                elif event.type == pygame.QUIT: 
+                    run = False
+                    pygame.quit()
 
             if mouse_L_Down: # If left clicked       
                 pos = pygame.mouse.get_pos()
                 if pos[1] < self.dimension:
-                    num_board, rect_board = self.changePoint(Solve_Or_Draw, pos, num_board, rect_board)
-                elif submit.collidepoint(pos):
-                    print("Submit")
+                    if game.boardPhase:
+                        num_board, rect_board = self.changePoint(1, pos, num_board, rect_board)
+                    elif game.solutionPhase:
+                        num_board, rect_board = self.changePoint(4, pos, num_board, rect_board)
+                
+                elif submit.collidepoint(pos) and game.connected():
+                    print(f"{playerNum}submit")
+                    game = net.send(pickle.dumps(f"{playerNum}submit"))
                     mouse_L_Down = False
-                    self.validate_board(num_board, rect_board)
-                elif solve.collidepoint(pos):
-                    print("Solve")
-                    mouse_L_Down = False
-                    match Solve_Or_Draw:
-                        case 1:
-                            Solve_Or_Draw = 4
-                        case 4:
-                            Solve_Or_Draw = 1
 
             elif mouse_R_Down: # If right clicked
                 pos = pygame.mouse.get_pos()
@@ -308,9 +232,6 @@ class mazeGame():
 
 
 
-
-
-
-game = mazeGame()
-if __name__ == "__main__": 
-    game.main()
+if __name__ == "__main__":
+    gameInstance = mazeGame()
+    gameInstance.main()
