@@ -34,12 +34,16 @@ def threaded_client(conn, curr_player, gameId): # Run in the background - Doesn'
         try:
             data = pickle.loads(conn.recv(8192))
 
+            #list_pickle_in = open("list.pickle","rb") *** LOOK INTO
+            #list1 = pickle.load(list_pickle_in)
+
             if gameId in games:
                 game = games[gameId]
 
                 if not data:
                     break
                 else:
+                    print("Got Data", type(data))
                     if data == "0submit":
                         print(mazeGame.num_board)
                         #game.play(0, [mazeGame.num_board, mazeGame.rect_board])
